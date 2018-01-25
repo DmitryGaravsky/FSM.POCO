@@ -1,7 +1,4 @@
-# Finite State Machine: POCO extensions
-
-
-## POCO-Approach
+# Finite State Machine. POCO-extensions library for .Net.
 
 The POCO-approach allows you to avoid writing boilerplate infrastructural code
 and focus on writing the business logic.
