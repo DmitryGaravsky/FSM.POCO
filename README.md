@@ -8,8 +8,8 @@ and focus on writing the business logic:
 
 
 For example:
-{Idle} -onStart-> {Fetching}  -onSuccess-> {Idle}
-                              -onFailure-> {Error} -onRetry-> {Fetching}
+{Idle} -onStart-> {Fetching}  -onSuccess-> {Idle}  
+                              -onFailure-> {Error} -onRetry-> {Fetching}  
 
 
 ```cs
@@ -45,8 +45,8 @@ public partial class Machine : IPOCOMachine<Machine.State> {
 The `SetState` and `Dispatch` extension methods in action:
 
 ```cs
-    [State(State.Idle)]
-    protected void OnStart(params object[] parameters) {
+[State(State.Idle)]
+protected void OnStart(params object[] parameters) {
     this.SetState(State.Fetching);
     try {
         int data = /* cool code for fetching some data */42;
