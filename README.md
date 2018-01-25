@@ -16,8 +16,8 @@ Here is a code:
 ```cs
 using FSM.POCO;
 
-public partial class Machine : IPOCOMachine<Machine.State> {
-    public enum State {
+public class Machine : IPOCOMachine<Machine.State> {
+    protected enum State {
         Idle,
         Fetching,
         Error
