@@ -4,14 +4,15 @@
 ## POCO-Approach
 
 The POCO-approach allows you to avoid writing boilerplate infrastructural code
-and focus on writing the business logic:
+and focus on writing the business logic.
 
-
-For example:
+For example:  
+```
 {Idle} -onStart-> {Fetching}  -onSuccess-> {Idle}  
                               -onFailure-> {Error} -onRetry-> {Fetching}  
+```
 
-
+Here is a code:
 ```cs
 using FSM.POCO;
 
