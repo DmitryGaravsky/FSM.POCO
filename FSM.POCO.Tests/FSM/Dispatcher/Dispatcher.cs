@@ -5,7 +5,7 @@
     using NUnit.Framework;
 
     [TestFixture]
-    public partial class DispatcherTests {
+    public class DispatcherTests {
         #region Test Classes
         enum State { First, Second };
         enum Trigger { ToSecond, ToFirst };

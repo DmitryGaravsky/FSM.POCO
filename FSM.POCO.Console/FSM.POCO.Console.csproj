@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3294671B-13B9-4DDC-BE88-95CA4C904E62}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{907782B2-799B-4100-A670-A90CAB69933E}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>FSM.POCO</RootNamespace>
-    <AssemblyName>FSM.POCO</AssemblyName>
+    <RootNamespace>FSM.POCO.Console</RootNamespace>
+    <AssemblyName>FSM.POCO.Console</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,6 +24,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\</OutputPath>
@@ -33,32 +35,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FSMSource\FSMBuilder.cs" />
-    <Compile Include="FSM\Attributes\Machine.cs" />
-    <Compile Include="FSM\Attributes\Trigger.cs" />
-    <Compile Include="FSM\Dispatcher\Dispatcher.cs" />
-    <Compile Include="FSMSource\FSMSource.cs" />
-    <Compile Include="FSM\Attributes\State.cs" />
-    <Compile Include="FSM\Dispatcher\DispatchersSettings.cs" />
-    <Compile Include="FSM\Exceptions\Builder.cs" />
-    <Compile Include="FSM\IPOCOMachine.cs" />
-    <Compile Include="FSM\IPOCOMachineExtension.cs" />
-    <Compile Include="FSM\Resolver\Resolver.cs" />
+    <Compile Include="FSM\Machine.cs" />
+    <Compile Include="FSM\Machine.partial.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utils\DispatcherAccessor.cs" />
-    <Compile Include="Utils\Dynamic\Activator.cs" />
-    <Compile Include="Utils\Dynamic\TypesHelper.cs" />
-    <Compile Include="Utils\Extensions\Expression.cs" />
-    <Compile Include="Utils\Extensions\State.cs" />
-    <Compile Include="Utils\Extensions\StateMethods.cs" />
-    <Compile Include="Utils\Extensions\Transition.cs" />
-    <Compile Include="Utils\Extensions\Trigger.cs" />
-    <Compile Include="Utils\Extensions\MayBe.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\FSM.POCO\FSM.POCO.csproj">
+      <Project>{3294671b-13b9-4ddc-be88-95ca4c904e62}</Project>
+      <Name>FSM.POCO</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

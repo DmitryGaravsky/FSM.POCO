@@ -40,7 +40,10 @@
     <Reference Include="nunit.framework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FSM\Attributes\State.cs" />
+    <Compile Include="FSM\Attributes\StateMethods.cs" />
     <Compile Include="FSM\Dispatcher\Dispatcher.cs" />
+    <Compile Include="FSM\Resolver\Resolver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

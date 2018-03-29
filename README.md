@@ -20,19 +20,19 @@ public class Machine : IPOCOMachine<Machine.State> {
         Error
     }
     [State(State.Idle)]
-    protected void OnStart(params object[] parameters) { 
+    protected void OnStart() { 
         /* implementation */  
     }
     [State(State.Fetching)]
-    protected void OnSuccess(params object[] parameters) { 
+    protected void OnSuccess(int data) { 
         /* implementation */  
     }
     [State(State.Fetching)]
-    protected void OnFailure(params object[] parameters) { 
+    protected void OnFailure(Exception e) { 
         /* implementation */  
     }
     [State(State.Error)]
-    protected void OnRetry(params object[] parameters) { 
+    protected void OnRetry() { 
         /* implementation */  
     }
 }
@@ -40,11 +40,11 @@ public class Machine : IPOCOMachine<Machine.State> {
 
 ## FSM-Extensions
 
-The `SetState` and `Dispatch` extension methods in action:
+The `SetState` and the `Dispatch` extension methods in action:
 
 ```cs
 [State(State.Idle)]
-protected void OnStart(params object[] parameters) {
+protected void OnStart() {
     this.SetState(State.Fetching);
     try {
         int data = /* cool code for fetching some data */42;

@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSM.POCO", "FSM.POCO\FSM.PO
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSM.POCO.Tests", "FSM.POCO.Tests\FSM.POCO.Tests.csproj", "{28191F1D-5478-4CF5-A37E-D4352B38BD6F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{34E19476-EBD1-4CDB-B696-E59A801FA9AB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSM.POCO.Console", "FSM.POCO.Console\FSM.POCO.Console.csproj", "{907782B2-799B-4100-A670-A90CAB69933E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,8 +25,15 @@ Global
 		{28191F1D-5478-4CF5-A37E-D4352B38BD6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{28191F1D-5478-4CF5-A37E-D4352B38BD6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{28191F1D-5478-4CF5-A37E-D4352B38BD6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{907782B2-799B-4100-A670-A90CAB69933E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{907782B2-799B-4100-A670-A90CAB69933E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{907782B2-799B-4100-A670-A90CAB69933E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{907782B2-799B-4100-A670-A90CAB69933E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{907782B2-799B-4100-A670-A90CAB69933E} = {34E19476-EBD1-4CDB-B696-E59A801FA9AB}
 	EndGlobalSection
 EndGlobal
