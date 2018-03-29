@@ -3,7 +3,7 @@
     using FSM.POCO;
 
     // Public API part
-    public partial class Machine : IPOCOMachine<Machine.State> {
+    public partial class Machine {
         /*
         {Idle} -onStart-> {Fetching}  -onSuccess-> {Idle,exit}
                                       -onFailure-> {Error}  -onRetry-> {Idle}
@@ -12,8 +12,8 @@
             this.Dispatch(() => OnStart());
         }
     }
-    // POCO part
-    public partial class Machine : IPOCOMachine<Machine.State> {
+    // FSM POCO part
+    partial class Machine : IPOCOMachine<Machine.State> {
         protected enum State {
             Idle,
             Fetching,
