@@ -32,6 +32,16 @@ namespace FSM.POCO.Internal {
             }
             return (TAttribute)attributes[0];
         }
+        public static TAttribute Attribute<TAttribute>(this Type type, bool throwWhenEmpty = true)
+            where TAttribute : Attribute {
+            var attributes = type.GetCustomAttributes(typeof(TAttribute), true);
+            if(attributes == null || attributes.Length == 0) {
+                if(throwWhenEmpty)
+                    throw new ArgumentException("The " + type.Name + " do not marked with the " + typeof(TAttribute).Name + "attribute");
+                attributes = new Attribute[] { null };
+            }
+            return (TAttribute)attributes[0];
+        }
         //
         public static Expression New(Type type) {
             var cInfo = type.GetConstructor(Type.EmptyTypes) ??

@@ -36,7 +36,10 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FSMSource\FSMAction.cs" />
     <Compile Include="FSMSource\FSMBuilder.cs" />
+    <Compile Include="FSMSource\FSMTransition.cs" />
+    <Compile Include="Utils\Dynamic\ILGen.cs" />
     <Compile Include="FSM\Attributes\Machine.cs" />
     <Compile Include="FSM\Attributes\Trigger.cs" />
     <Compile Include="FSM\Dispatcher\Dispatcher.cs" />
@@ -52,6 +55,7 @@
     <Compile Include="Utils\Dynamic\Activator.cs" />
     <Compile Include="Utils\Dynamic\TypesHelper.cs" />
     <Compile Include="Utils\Extensions\Expression.cs" />
+    <Compile Include="Utils\Extensions\Machine.cs" />
     <Compile Include="Utils\Extensions\State.cs" />
     <Compile Include="Utils\Extensions\StateMethods.cs" />
     <Compile Include="Utils\Extensions\Transition.cs" />

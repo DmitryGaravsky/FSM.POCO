@@ -1,5 +1,6 @@
 ﻿namespace FSM.POCO {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -13,9 +14,18 @@
         readonly static TypesActivator typesActivator = new TypesActivator();
         static Type CreateType(Type baseType, Type stateType) {
             TypeBuilder typeBuilder = GetTypeBuilder(baseType);
-            BuildConstructors(baseType, typeBuilder,
-                EnsureDispatcherField(typeBuilder, baseType, stateType));
-            return typeBuilder.CreateType();
+            IResolver resolver = CreateResolver(stateType);
+            BuildConstructors(typeBuilder, baseType, stateType,
+                EnsureDispatcherField(typeBuilder, baseType, stateType),
+                EnsureTriggerType(typeBuilder, baseType, resolver));
+            var type = typeBuilder.CreateType();
+            DynamicTypesHelper.Save();
+            return type;
+        }
+        static IResolver CreateResolver(Type stateType) {
+            Type resolverType = typeof(Resolver<>)
+                .MakeGenericType(stateType);
+            return (IResolver)Activator.CreateInstance(resolverType);
         }
         static TypeBuilder GetTypeBuilder(Type baseType) {
             var moduleBuilder = DynamicTypesHelper.GetModuleBuilder(baseType.Assembly);
@@ -27,92 +37,99 @@
                 .Where(f => dispatcherType == f.FieldType).FirstOrDefault();
             return dispatcherField ?? typeBuilder.DefineField("dispatcher", dispatcherType, FA.Private | FA.InitOnly);
         }
-        static void BuildConstructors(Type baseType, TypeBuilder typeBuilder, FieldInfo dispatcherField) {
-            var cInfos = baseType.GetConstructors(BF.Instance | BF.NonPublic | BF.Public);
-            for(int i = 0; i < cInfos.Length; i++)
-                CreateConstructor(cInfos[i], typeBuilder, dispatcherField);
+        static Type EnsureTriggerType(TypeBuilder typeBuilder, Type baseType, IResolver resolver) {
+            Type triggerType = baseType.GetNestedTypes(BF.Public | BF.NonPublic | BF.Instance)
+                .Where(t => t.Name == "Trigger").FirstOrDefault();
+            return triggerType ?? CreateTriggerType(typeBuilder, baseType, resolver);
         }
-        static void CreateConstructor(ConstructorInfo cInfo, TypeBuilder typeBuilder, FieldInfo dispatcherField) {
+        static Type CreateTriggerType(TypeBuilder typeBuilder, Type baseType, IResolver resolver) {
+            var triggerTypeBuilder = typeBuilder.DefineNestedType("Trigger", TA.NestedPrivate | TA.Sealed, typeof(Enum), null);
+            triggerTypeBuilder.DefineField("value__", typeof(int), FA.Private | FA.SpecialName);
+            var triggers = resolver.ResolveTriggers(baseType);
+            foreach(KeyValuePair<Enum, string> item in triggers) {
+                triggerTypeBuilder.DefineField(item.Value, triggerTypeBuilder, FA.Public | FA.Literal | FA.Static)
+                    .SetConstant(Convert.ChangeType(item.Key, typeof(int)));
+            }
+            return triggerTypeBuilder;
+        }
+        static void BuildConstructors(TypeBuilder typeBuilder, Type baseType, Type stateType,
+            FieldInfo dispatcherField, Type triggerType) {
+            TypeBuilder triggerTypeBuilder = triggerType as TypeBuilder;
+            if(triggerTypeBuilder != null && !triggerTypeBuilder.IsCreated())
+                triggerType = triggerTypeBuilder.CreateType();
+            object initialState = MachineExtension.GetInitialState(baseType);
+            var transitions = BuildTransitions(typeBuilder, baseType, stateType);
+            var cInfos = baseType.GetConstructors(BF.Instance | BF.NonPublic | BF.Public);
+            for(int i = 0; i < cInfos.Length; i++) {
+                ILGenerator ctorGenerator = EmitBaseCtorCall(typeBuilder, cInfos[i]);
+                CreateConstructor(ctorGenerator,
+                        stateType, initialState,
+                        triggerTypeBuilder, triggerType,
+                        dispatcherField, transitions
+                    );
+            }
+        }
+        static void CreateConstructor(ILGenerator ctorGenerator,
+            Type stateType, object initialState,
+            TypeBuilder triggerTypeBuilder, Type triggerType,
+            FieldInfo dispatcherField, IDictionary<Enum, HashSet<Transition>> transitions) {
+            ctorGenerator.Emit(OpCodes.Ldarg_0);
+            // var transisions = new Dictionary<State, IDictionary<Enum, Action<object[]>>>(capacity);
+            var transitionsCtor = GetTransitionsCtor(stateType);
+            ctorGenerator.Emit(OpCodes.Ldc_I4, triggerType.GetFields().Length - 1);
+            ctorGenerator.Emit(OpCodes.Newobj, transitionsCtor);
+            ctorGenerator.DeclareLocal(transitionsCtor.DeclaringType);
+            ctorGenerator.Emit(OpCodes.Stloc_0);
+            // Transitions
+            AddActions(ctorGenerator, stateType, triggerTypeBuilder, transitions, transitionsCtor.DeclaringType);
+            ctorGenerator.Emit(OpCodes.Ldloc_0);
+            // var settings = new Internal.DispatchersSettings<State, Trigger>(initialState);
+            var dispatcherSettingCtor = GetDispatcherSettingsCtor(stateType, triggerTypeBuilder, triggerType);
+            ctorGenerator.EmitLdEnum(stateType, initialState);
+            ctorGenerator.Emit(OpCodes.Newobj, dispatcherSettingCtor);
+            // this.dispatcher = new Internal.Dispatcher<State>(transisions, settings);
+            var dispatcherCtor = GetDispatcherCtor(stateType);
+            ctorGenerator.Emit(OpCodes.Newobj, dispatcherCtor);
+            ctorGenerator.Emit(OpCodes.Stfld, dispatcherField);
+            ctorGenerator.Emit(OpCodes.Ret);
+        }
+        static ILGenerator EmitBaseCtorCall(TypeBuilder typeBuilder, ConstructorInfo cInfo) {
             Type[] parameterTypes = cInfo.GetParameters()
                 .Select(p => p.ParameterType).ToArray();
             var ctorBuilder = typeBuilder.DefineConstructor(MA.Public, CallingConventions.Standard, parameterTypes);
             var ctorGenerator = ctorBuilder.GetILGenerator();
             ctorGenerator.Emit(OpCodes.Ldarg_0);
-            EmitLdargs(parameterTypes, ctorGenerator);
+            ctorGenerator.EmitLdargs(parameterTypes.Length);
             ctorGenerator.Emit(OpCodes.Call, cInfo);
-            ctorGenerator.Emit(OpCodes.Ret);
+            return ctorGenerator;
         }
-        readonly static OpCode[] args = new OpCode[] { 
-            OpCodes.Ldarg_1, OpCodes.Ldarg_2, OpCodes.Ldarg_3 
-        };
-        static void EmitLdargs(Array parameters, ILGenerator generator) {
-            for(int i = 0; i < parameters.Length; i++) {
-                if(i < 3)
-                    generator.Emit(args[i]);
-                else
-                    generator.Emit(OpCodes.Ldarg_S, i + 1);
-            }
+        internal static void BuildTransition(MethodInfo targetMethod, ILGenerator generator, bool isStaticCall) {
+            BuildTransition(targetMethod, generator, targetMethod.GetParameters(), isStaticCall);
         }
-        internal static void BuildTransition(MethodInfo targetMethod, ILGenerator generator, bool isStaticCall = false) {
-            var parameters = targetMethod.GetParameters();
-            OpCode @this = OpCodes.Ldarg_0;
-            OpCode @params = isStaticCall ? OpCodes.Ldarg_0 : OpCodes.Ldarg_1;
-            generator.Emit(@this);
-            if(isStaticCall) {
-                generator.Emit(OpCodes.Ldc_I4_0);
-                generator.Emit(OpCodes.Ldelem_Ref); // @this = @params[0]
-            }
-            int offset = isStaticCall ? 1 : 0;
-            generator.DeclareLocal(typeof(int)); // locals: int length
-            generator.Emit(@params);
-            generator.Emit(OpCodes.Ldlen);
-            generator.Emit(OpCodes.Conv_I4);
-            generator.Emit(OpCodes.Stloc_0);
-            for(int i = 0; i < parameters.Length; i++) {
-                ParameterInfo p = parameters[i];
-                generator.Emit(OpCodes.Ldloc_0); // @length
-                EmitLdIndex(generator, offset + i);
-                var labelGetIndexedParam = generator.DefineLabel();
-                generator.Emit(OpCodes.Bgt_S, @labelGetIndexedParam);
-                // DefaultValue
-                EmitLdDefaultValue(generator, p);
-                var @labelContinue = generator.DefineLabel();
-                generator.Emit(OpCodes.Br_S, @labelContinue);
-                // Indexed Parameter
-                generator.MarkLabel(@labelGetIndexedParam);
-                generator.Emit(@params);
-                EmitLdIndex(generator, offset + i);
-                generator.Emit(OpCodes.Ldelem_Ref);
-                EmitUnboxOrCast(generator, p.ParameterType);
-                generator.MarkLabel(@labelContinue);
-            }
-            generator.Emit(OpCodes.Call, targetMethod);
-            generator.Emit(OpCodes.Ret);
+        static ConstructorInfo GetTransitionsCtor(Type stateType) {
+            Type transitionsType = typeof(Dictionary<,>)
+                .MakeGenericType(stateType, typeof(IDictionary<Enum, Action<object[]>>));
+            return transitionsType.GetConstructor(new Type[] { typeof(int) });
         }
-        static void EmitUnboxOrCast(ILGenerator generator, Type parameterType) {
-            if(parameterType.IsValueType)
-                generator.Emit(OpCodes.Unbox, parameterType);
-            else {
-                if(parameterType != typeof(object))
-                    generator.Emit(OpCodes.Castclass, parameterType);
-            }
+        readonly static Type DispatcherSettingTypeDefinition = typeof(DispatchersSettings<,>);
+        readonly static Type IDispatcherSettingTypeDefinition = typeof(IDispatchersSettings<>);
+        readonly static Type DispatcherTypeDefinition = typeof(Dispatcher<>);
+        static ConstructorInfo GetDispatcherSettingsCtor(Type stateType, TypeBuilder triggerTypeBuilder, Type triggerType) {
+            Type dispatcherSettingType = DispatcherSettingTypeDefinition
+                .MakeGenericType(stateType, triggerTypeBuilder ?? triggerType);
+            if(triggerTypeBuilder == null)
+                return dispatcherSettingType.GetConstructor(new Type[] { stateType, triggerType });
+            var dispatcherSettingCtor = DispatcherSettingTypeDefinition
+                .GetConstructor(new Type[] { DispatcherSettingTypeDefinition.GetGenericArguments()[0] });
+            return TypeBuilder.GetConstructor(dispatcherSettingType, dispatcherSettingCtor);
         }
-        readonly static OpCode[] indices = new OpCode[] { 
-            OpCodes.Ldc_I4_0, OpCodes.Ldc_I4_1, OpCodes.Ldc_I4_2, 
-            OpCodes.Ldc_I4_3, OpCodes.Ldc_I4_4, OpCodes.Ldc_I4_5, 
-            OpCodes.Ldc_I4_6, OpCodes.Ldc_I4_7, OpCodes.Ldc_I4_8 
-        };
-        static void EmitLdIndex(ILGenerator generator, int index) {
-            if(index < indices.Length)
-                generator.Emit(indices[index]);
-            else
-                generator.Emit(OpCodes.Ldc_I4_S, index + 1);
-        }
-        static void EmitLdDefaultValue(ILGenerator generator, ParameterInfo p) {
-            if(p.ParameterType.IsClass)
-                generator.Emit(OpCodes.Ldnull);
-            else
-                generator.Emit(OpCodes.Ldc_I4, (int)p.DefaultValue); // TODO
+        static ConstructorInfo GetDispatcherCtor(Type stateType) {
+            Type dispatcherSettingType = IDispatcherSettingTypeDefinition
+                .MakeGenericType(stateType);
+            Type transitionsType = typeof(IDictionary<,>)
+                .MakeGenericType(stateType, typeof(IDictionary<Enum, Action<object[]>>));
+            return DispatcherTypeDefinition.MakeGenericType(stateType)
+                .GetConstructor(new Type[] { transitionsType, dispatcherSettingType });
         }
     }
 }

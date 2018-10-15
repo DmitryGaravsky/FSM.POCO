@@ -2,18 +2,13 @@
     using System;
     using FSM.POCO;
 
-    // Public API part
-    public partial class Machine {
-        /*
-        {Idle} -onStart-> {Fetching}  -onSuccess-> {Idle,exit}
-                                      -onFailure-> {Error}  -onRetry-> {Idle}
-        */
-        public void Run() {
-            this.Dispatch(() => OnStart());
-        }
-    }
     // FSM POCO part
     partial class Machine : IPOCOMachine<Machine.State> {
+        /*
+
+        {Idle,initial} -onStart-> {Fetching} -onFailure-> {Error} -onRetry-> {Idle}
+                                             -onSuccess-> {Idle,exit}
+        */
         protected enum State {
             Idle,
             Fetching,

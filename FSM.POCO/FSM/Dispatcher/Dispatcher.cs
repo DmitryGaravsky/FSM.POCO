@@ -15,7 +15,7 @@ namespace FSM.POCO.Internal {
     public sealed class Dispatcher<TState> : IDispatcher<TState> {
         readonly IDispatchersSettings<TState> settings;
         readonly IDictionary<TState, IDictionary<Enum, Action<object[]>>> transitions;
-        public Dispatcher(IDictionary<TState, IDictionary<Enum, Action<object[]>>> transisions, IDispatchersSettings<TState> settings) {
+        public Dispatcher(IDictionary<TState, IDictionary<Enum, Action<object[]>>> transitions, IDispatchersSettings<TState> settings) {
             if(settings == null)
                 throw new ArgumentNullException("settings");
             if(settings.TriggerType == null)
@@ -23,7 +23,7 @@ namespace FSM.POCO.Internal {
             if(!settings.TriggerType.IsEnum)
                 throw new ArgumentException("The settings.TriggerType should be Enum.");
             this.settings = settings;
-            this.transitions = transisions ?? new Dictionary<TState, IDictionary<Enum, Action<object[]>>>();
+            this.transitions = transitions ?? new Dictionary<TState, IDictionary<Enum, Action<object[]>>>();
             this.current = settings.InitialState;
         }
         IDispatchersSettings<TState> IDispatcher<TState>.Settings {
